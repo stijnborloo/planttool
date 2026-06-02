@@ -1,0 +1,16 @@
+{
+  "name": "PlantScope",
+  "short_name": "PlantScope",
+  "description": "Botanische AI plantidentificatie",
+  "start_url": "/planttool/",
+  "display": "standalone",
+  "background_color": "#f8f7f5",
+  "theme_color": "#1a4d2e",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f33f.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    }
+  ]
+}
