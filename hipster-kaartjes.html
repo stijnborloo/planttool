@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hipster Kaartjes — muziekkaartjes met QR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16151C;
+  --paper:#F5EFE3;
+  --mustard:#E8B33C;
+  --raspberry:#D8456B;
+  --teal:#2E8C83;
+  --line:#3A3945;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--ink);color:var(--paper);min-height:100vh}
+
+.app{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+h1{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,6vw,44px);letter-spacing:-0.02em;line-height:1}
+h1 .accent{color:var(--mustard)}
+.sub{color:#9A97A6;font-size:14px;margin-bottom:28px}
+.btn{font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;border:none;border-radius:10px;padding:12px 18px;cursor:pointer;background:var(--mustard);color:var(--ink);transition:transform .12s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
+.btn.ghost{background:transparent;color:var(--paper);border:1px solid var(--line)}
+.btn.pink{background:var(--raspberry);color:var(--paper)}
+.btn.teal{background:var(--teal);color:var(--paper)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.card{background:#1E1D26;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.card h2{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mustard);margin-bottom:12px}
+label{display:block;font-size:13px;color:#9A97A6;margin:10px 0 5px}
+textarea{width:100%;min-height:160px;background:var(--ink);border:1px solid var(--line);border-radius:8px;color:var(--paper);padding:11px 12px;font-size:13px;font-family:ui-monospace,monospace;resize:vertical}
+textarea:focus-visible,input:focus-visible{outline:2px solid var(--mustard);outline-offset:1px}
+.hint{font-size:12px;color:#807D8E;margin-top:8px;line-height:1.6}
+.hint a{color:var(--mustard)}
+.hint strong{color:#A8A5B5}
+.status{font-size:13px;margin-top:10px;min-height:18px}
+.status.err{color:var(--raspberry)}
+.status.ok{color:var(--teal);filter:brightness(1.4)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.count{font-size:13px;color:#9A97A6;margin-left:auto}
+.filebtn{display:inline-block}
+.filebtn input{display:none}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:#807D8E;font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:11px;padding:8px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid #26252F;vertical-align:middle}
+td.year input{width:64px;text-align:center;padding:6px;font-weight:700;background:var(--ink);border:1px solid var(--line);border-radius:6px;color:var(--paper);font-family:inherit;font-size:13px}
+td.year input.missing{border-color:var(--raspberry)}
+td .del{background:none;border:none;color:#807D8E;cursor:pointer;font-size:16px;line-height:1;padding:4px}
+td .del:hover{color:var(--raspberry)}
+.qr-type{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+.qr-type.direct{background:var(--teal);color:var(--paper)}
+.qr-type.search{background:#4A4857;color:var(--paper)}
+
+/* ============ PRINT ============ */
+.print-area{display:none}
+@media print{
+  body{background:#fff}
+  .app{display:none}
+  .print-area{display:block}
+  @page{size:A4;margin:10mm}
+  .sheet{width:190mm;page-break-after:always;display:grid;grid-template-columns:repeat(3,60mm);grid-auto-rows:60mm;gap:4mm;justify-content:center;align-content:start;padding-top:2mm}
+  .kaart{width:60mm;height:60mm;border:0.3mm dashed #bbb;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .kaart.front{background:#16151C}
+  .kaart.front .qr{background:#fff;padding:3mm;border-radius:2mm}
+  .kaart.front .qr img,.kaart.front .qr canvas{width:36mm!important;height:36mm!important;display:block}
+  .kaart.front .brand{position:absolute;bottom:3mm;font-family:'Archivo Black',sans-serif;font-size:8pt;letter-spacing:.14em;text-transform:uppercase}
+  .kaart.back{color:#16151C;text-align:center;padding:4mm}
+  .kaart.back .artiest{font-weight:700;font-size:9.5pt;text-transform:uppercase;letter-spacing:.05em;line-height:1.2;max-height:9mm;overflow:hidden}
+  .kaart.back .jaar{font-family:'Archivo Black',sans-serif;font-size:44pt;line-height:1;margin:2mm 0}
+  .kaart.back .titel{font-size:9pt;line-height:1.25;max-height:9mm;overflow:hidden}
+  .kaart.empty{border:none;visibility:hidden}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>HIPSTER<span class="accent">KAARTJES</span></h1>
+  </header>
+  <p class="sub">Plak je tracklijst, laat de jaartallen opzoeken, print dubbelzijdig. Geen Spotify-account of API nodig.</p>
+
+  <div class="card">
+    <h2>1 · Tracklijst plakken</h2>
+    <label for="pasteBox">Plak hier je lijst (CSV van Exportify/TuneMyMusic, of gewoon regels "Artiest - Titel")</label>
+    <textarea id="pasteBox" placeholder="Queen - Bohemian Rhapsody&#10;Stromae - Alors on danse&#10;Gorki - Mia&#10;&#10;…of plak de volledige CSV-export van exportify.net"></textarea>
+    <div class="toolbar">
+      <button class="btn" id="parseBtn">Verwerk lijst</button>
+      <label class="btn ghost filebtn">Of kies .csv-bestand<input type="file" id="csvFile" accept=".csv,.txt"></label>
+    </div>
+    <p class="hint">
+      <strong>Tip — makkelijkste manier:</strong> ga naar <a href="https://exportify.net" target="_blank" rel="noopener">exportify.net</a>, log in met Spotify, klik Export naast je playlist en kies hier dat .csv-bestand. Dan krijg je meteen de juiste jaartallen én directe Spotify-QR's mee.<br>
+      Bij een gewone tekstlijst zonder jaartallen kun je die in stap 2 automatisch laten opzoeken.
+    </p>
+    <p class="status" id="parseStatus"></p>
+  </div>
+
+  <div class="card" id="listCard" style="display:none">
+    <h2>2 · Controleer &amp; print</h2>
+    <p class="hint" style="margin-bottom:10px">
+      Rood omrand jaartal = ontbreekt nog. <span class="qr-type direct">QR: direct</span> = QR opent het exacte nummer in Spotify. <span class="qr-type search">QR: zoek</span> = QR opent een Spotify-zoekopdracht op artiest + titel (werkt ook prima, eerste resultaat is vrijwel altijd juist).
+    </p>
+    <div style="max-height:420px;overflow:auto">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Artiest</th><th>Titel</th><th style="width:80px">Jaar</th><th style="width:34px"></th></tr></thead>
+        <tbody id="trackBody"></tbody>
+      </table>
+    </div>
+    <div class="toolbar">
+      <button class="btn teal" id="yearBtn">Zoek ontbrekende jaartallen op</button>
+      <button class="btn pink" id="printBtn">Print kaartjes (dubbelzijdig)</button>
+      <span class="count" id="trackCount"></span>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--paper);cursor:pointer">
+      <input type="checkbox" id="blindMode" checked style="width:16px;height:16px;accent-color:var(--mustard)">
+      Verberg antwoord bij scannen (QR opent speler-pagina met geblurde speler i.p.v. rechtstreeks Spotify)
+    </label>
+    <p class="status" id="yearStatus"></p>
+    <p class="hint">
+      Jaartallen komen van MusicBrainz (vroegste release — precies wat je wil voor het spel). Duurt ± 1 seconde per nummer.<br>
+      <strong>Printinstellingen:</strong> A4 · dubbelzijdig · <strong>spiegelen langs korte zijde</strong> (flip on short edge) · schaal 100% · achtergrondkleuren aan. 12 kaartjes per blad, 60×60&nbsp;mm.
+    </p>
+  </div>
+</div>
+
+<div class="print-area" id="printArea"></div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+let tracks = []; // {spotifyId?, artist, title, year}
+const CARD_COLORS = ['#E8B33C','#D8456B','#2E8C83','#F5EFE3'];
+
+function setStatus(sel,msg,cls){ const el=$(sel); el.textContent=msg; el.className='status '+(cls||''); }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- CSV parser (met quotes en newlines in velden) ---------- */
+function parseCSV(text){
+  const rows=[]; let row=[], field='', inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; }
+      else field+=ch;
+    }else{
+      if(ch==='"') inQ=true;
+      else if(ch===','){ row.push(field); field=''; }
+      else if(ch==='\n'||ch==='\r'){
+        if(ch==='\r'&&text[i+1]==='\n') i++;
+        row.push(field); field='';
+        if(row.some(f=>f.trim()!=='')) rows.push(row);
+        row=[];
+      }
+      else field+=ch;
+    }
+  }
+  row.push(field);
+  if(row.some(f=>f.trim()!=='')) rows.push(row);
+  return rows;
+}
+
+function extractSpotifyId(v){
+  if(!v) return null;
+  let m=v.match(/spotify:track:([A-Za-z0-9]{15,})/); if(m) return m[1];
+  m=v.match(/open\.spotify\.com\/track\/([A-Za-z0-9]{15,})/); if(m) return m[1];
+  if(/^[A-Za-z0-9]{22}$/.test(v.trim())) return v.trim();
+  return null;
+}
+
+/* ---------- invoer verwerken ---------- */
+function parseInput(text){
+  text=text.trim();
+  if(!text) return [];
+  const rows=parseCSV(text);
+  // header zoeken
+  if(rows.length>1 && rows[0].length>=2){
+    const hdr=rows[0].map(h=>h.toLowerCase().trim());
+    const find=re=>hdr.findIndex(h=>re.test(h));
+    const iUri=find(/uri|spotify.*id|spotify$/);
+    const iTitle=find(/^(track ?name|title|song|name|titel|nummer)$/);
+    const iArtist=find(/artist|artiest/);
+    const iDate=find(/release ?date|year|jaar|datum/);
+    if(iTitle>-1 && iArtist>-1){
+      return rows.slice(1).map(r=>({
+        spotifyId: iUri>-1 ? extractSpotifyId(r[iUri]||'') : null,
+        title:(r[iTitle]||'').trim(),
+        artist:(r[iArtist]||'').trim().replace(/;\s*/g,', '),
+        year: iDate>-1 ? ((r[iDate]||'').trim().slice(0,4).match(/^\d{4}$/)?(r[iDate]||'').trim().slice(0,4):'') : ''
+      })).filter(t=>t.title&&t.artist);
+    }
+  }
+  // gewone regels: "Artiest - Titel" (evt. met jaartal achteraan)
+  return text.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    let year='';
+    const ym=l.match(/[\(\[]?(\d{4})[\)\]]?\s*$/);
+    if(ym && +ym[1]>=1900 && +ym[1]<=2100){ year=ym[1]; l=l.slice(0,ym.index).replace(/[-–,]\s*$/,'').trim(); }
+    const parts=l.split(/\s+[-–—]\s+/);
+    if(parts.length>=2) return {spotifyId:null, artist:parts[0].trim(), title:parts.slice(1).join(' - ').trim(), year};
+    return {spotifyId:null, artist:'', title:l, year};
+  }).filter(t=>t.title);
+}
+
+function handleParse(text){
+  const parsed=parseInput(text);
+  if(!parsed.length){ setStatus('#parseStatus','Geen bruikbare regels gevonden.','err'); return; }
+  tracks=parsed;
+  renderTable();
+  const missing=tracks.filter(t=>!t.year).length;
+  const direct=tracks.filter(t=>t.spotifyId).length;
+  setStatus('#parseStatus', tracks.length+' nummers verwerkt ('+direct+' met directe Spotify-link'+(missing?', '+missing+' zonder jaartal':'')+').','ok');
+  $('#listCard').style.display='block';
+  $('#listCard').scrollIntoView({behavior:'smooth'});
+}
+
+$('#parseBtn').addEventListener('click', ()=>handleParse($('#pasteBox').value));
+$('#csvFile').addEventListener('change', e=>{
+  const f=e.target.files[0];
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>handleParse(r.result);
+  r.readAsText(f);
+  e.target.value='';
+});
+
+/* ---------- tabel ---------- */
+function renderTable(){
+  const tb=$('#trackBody');
+  tb.innerHTML='';
+  tracks.forEach((t,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+(i+1)+'</td>'+
+      '<td>'+esc(t.artist)+'</td>'+
+      '<td>'+esc(t.title)+'<span class="qr-type '+(t.spotifyId?'direct">QR: direct':'search">QR: zoek')+'</span></td>'+
+      '<td class="year"><input type="text" value="'+esc(t.year)+'" data-i="'+i+'" maxlength="4" class="'+(t.year?'':'missing')+'"></td>'+
+      '<td><button class="del" data-i="'+i+'" title="Verwijder">×</button></td>';
+    tb.appendChild(tr);
+  });
+  updateCount();
+}
+function updateCount(){
+  $('#trackCount').textContent = tracks.length+' kaartjes · '+Math.ceil(tracks.length/12)+' blad(en) per zijde';
+}
+$('#trackBody').addEventListener('input', e=>{
+  if(e.target.matches('td.year input')){
+    const i=+e.target.dataset.i;
+    tracks[i].year=e.target.value.trim();
+    e.target.classList.toggle('missing', !tracks[i].year);
+  }
+});
+$('#trackBody').addEventListener('click', e=>{
+  if(e.target.matches('.del')){ tracks.splice(+e.target.dataset.i,1); renderTable(); }
+});
+
+/* ---------- jaartallen via MusicBrainz ---------- */
+function cleanTitle(t){
+  return t.replace(/\s*[\(\[][^\)\]]*[\)\]]\s*/g,' ').replace(/\s*-\s*(remaster(ed)?|live|radio edit|single version|mono|stereo).*$/i,'').trim();
+}
+async function lookupYear(t){
+  const q='recording:"'+cleanTitle(t.title).replace(/"/g,'')+'" AND artist:"'+t.artist.split(',')[0].replace(/"/g,'')+'"';
+  const url='https://musicbrainz.org/ws/2/recording?query='+encodeURIComponent(q)+'&fmt=json&limit=3';
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('MusicBrainz '+res.status);
+  const d=await res.json();
+  let best=null;
+  for(const rec of (d.recordings||[])){
+    const fr=rec['first-release-date'];
+    if(fr && /^\d{4}/.test(fr)){
+      const y=+fr.slice(0,4);
+      if(best===null || y<best) best=y;
+    }
+  }
+  return best?String(best):null;
+}
+$('#yearBtn').addEventListener('click', async ()=>{
+  const todo=tracks.map((t,i)=>({t,i})).filter(x=>!x.t.year && x.t.artist);
+  if(!todo.length){ setStatus('#yearStatus','Alle nummers hebben al een jaartal.','ok'); return; }
+  $('#yearBtn').disabled=true;
+  let done=0, found=0;
+  for(const x of todo){
+    setStatus('#yearStatus','Opzoeken… '+(done+1)+'/'+todo.length+' — '+x.t.artist+' – '+x.t.title);
+    try{
+      const y=await lookupYear(x.t);
+      if(y){ x.t.year=y; found++; }
+    }catch(e){}
+    done++;
+    renderTable();
+    await new Promise(r=>setTimeout(r,1100)); // MusicBrainz: max 1 request/seconde
+  }
+  setStatus('#yearStatus','Klaar: '+found+' van '+todo.length+' jaartallen gevonden. Vul de rest manueel aan.', found===todo.length?'ok':'');
+  $('#yearBtn').disabled=false;
+});
+
+/* ---------- print ---------- */
+function b64url(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function qrTarget(t){
+  const blind = $('#blindMode').checked && location.protocol.startsWith('http');
+  if(blind){
+    const base = new URL('speler.html', location.href).href;
+    if(t.spotifyId) return base+'?t='+t.spotifyId;
+    return base+'?q='+b64url((t.artist+' '+cleanTitle(t.title)).trim());
+  }
+  if(t.spotifyId) return 'https://open.spotify.com/track/'+t.spotifyId;
+  return 'https://open.spotify.com/search/'+encodeURIComponent((t.artist+' '+cleanTitle(t.title)).trim());
+}
+$('#printBtn').addEventListener('click', ()=>{
+  buildPrintArea();
+  setTimeout(()=>window.print(), 400);
+});
+
+function buildPrintArea(){
+  const area=$('#printArea');
+  area.innerHTML='';
+  const perPage=12, cols=3;
+  for(let p=0; p<tracks.length; p+=perPage){
+    const chunk=tracks.slice(p,p+perPage);
+
+    /* VOORKANT: QR-codes */
+    const front=document.createElement('div');
+    front.className='sheet';
+    chunk.forEach((t,ci)=>{
+      const k=document.createElement('div');
+      k.className='kaart front';
+      const q=document.createElement('div');
+      q.className='qr';
+      k.appendChild(q);
+      const b=document.createElement('div');
+      b.className='brand';
+      b.style.color=CARD_COLORS[(p+ci)%CARD_COLORS.length];
+      b.textContent='HIPSTERKAARTJES';
+      k.appendChild(b);
+      front.appendChild(k);
+      new QRCode(q,{text:qrTarget(t),width:256,height:256,correctLevel:QRCode.CorrectLevel.M});
+    });
+    area.appendChild(front);
+
+    /* ACHTERKANT: per rij gespiegeld voor duplex */
+    const back=document.createElement('div');
+    back.className='sheet';
+    for(let r=0;r<perPage/cols;r++){
+      for(let c=cols-1;c>=0;c--){
+        const idx=r*cols+c;
+        const t=chunk[idx];
+        const k=document.createElement('div');
+        if(!t){ k.className='kaart empty'; back.appendChild(k); continue; }
+        k.className='kaart back';
+        k.style.background=CARD_COLORS[(p+idx)%CARD_COLORS.length];
+        k.innerHTML =
+          '<div class="artiest">'+esc(t.artist)+'</div>'+
+          '<div class="jaar">'+esc(t.year||'????')+'</div>'+
+          '<div class="titel">'+esc(t.title)+'</div>';
+        back.appendChild(k);
+      }
+    }
+    area.appendChild(back);
+  }
+}
+})();
+</script>
+</body>
+</html>
